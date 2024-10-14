@@ -1,0 +1,84 @@
+trigger:
+  - master
+  - feature/*  # Adjust branches as needed
+
+pr:
+  - master
+  - feature/*  # Adjust PR branches as needed
+
+jobs:
+  - job: Linting
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+          addToPath: true
+
+      - script: |
+          pip install flake8 mypy
+        displayName: 'Install linters'
+
+      - script: |
+          flake8 run.py roop
+        displayName: 'Run flake8 linter'
+
+      - script: |
+          mypy run.py roop
+        displayName: 'Run mypy static type checker'
+
+  - job: Testing
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - checkout: self
+
+      - script: |
+          sudo apt-get update
+          sudo apt-get install -y nvidia-cuda-toolkit
+        displayName: 'Install CUDA'
+
+      - script: |
+          sudo apt update
+          sudo apt install -y python3-pip
+          sudo apt-get install -y python3-tk  # Install Tkinter
+          pip3 install yt-dlp
+        displayName: 'Install yt-dlp and dependencies'
+
+      - script: |
+          wget -O ".github/examples/youtube.mp4" "https://px21.genyoutube.online/mates/en/download?url=ZTREjvNyOeQmlWkVdAKxW079cFkoJIiPAVxbhDWu1ur%2Bh%2BIfdpX%2B7JSJgFeqZRFC6ViPw1KJys1YbedHmHp8QyZIRZF5f7IHl4Tnno3dFNEpw1bezBYtXQOfyVNWqKalFeUGSVVe4ZPtFgQnO0UDJiJuefd7tBelwmvBnIuv/m1G6mpxehQTtZgRwcRxiZIy%2BufBHtuMsWgKDNQKZzLaAI/Z9b/BGLHwuHJpRpGdlWMRBJ4pLYWyHspuhu%2BNhhiM1AYUJ4kZ0pvC5XajlW2Y%2BJo8MX14%2BheLQRdFAB/5TsCtcEOBdOWS0oo6BRJFZf6fA5/JU1aopqX7/FxtM0ztBGWDvffNVfxjcYYHcPiZTGY5j4SsssJA0fuFya/wzMKFXcYzQ3syplWWm5wB7HEZ71LoKjgqA5Hgfcx/zdSjhMj7zNOrNT2Io85/R/MxCJKPQvmRZhXEHVlej3kDnH92xbhUKI7YZSjn0nIGA/17KmUvWVsSv1iC5T%2BRytj0zWU0DWExTB6nMY4b5VJ5vkbLuwLZtLam8oY1KjMhs%2B9UmaTSEeepaxDYDl3VAigl5xMGOxJwoC1AlJ8%3D"
+        displayName: 'Download YouTube video'
+
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+          addToPath: true
+        displayName: 'Set up Python'
+
+      - script: |
+          pip install -r requirements-headless.txt
+        displayName: 'Install Python dependencies'
+
+      - script: |
+          python run.py -s ".github/examples/runningmaneh.png" -t ".github/examples/youtube.mp4" -o ".github/examples/output.mp4" --keep-frames --keep-fps --temp-frame-quality 1 --output-video-quality 1 --execution-provider cpu --execution-threads 1 --frame-processor face_swapper
+        displayName: 'Run Python script'
+
+      # Optional step: Uncomment to compare videos using PSNR
+      # - script: |
+      #     ffmpeg -i .github/examples/snapshot.mp4 -i .github/examples/output.mp4 -filter_complex psnr -f null -
+      #   displayName: 'Compare videos using PSNR'
+
+      - script: |
+          ffmpeg -i .github/examples/output.mp4 -vf scale=1280:720 -c:v libx264 -preset slow -crf 22 -c:a aac -b:a 128k .github/examples/output_hd.mp4
+        displayName: 'Convert output to HD'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          artifactName: 'processed-video'
+          targetPath: '.github/examples/output.mp4'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          artifactName: 'processed-video-hd'
+          targetPath: '.github/examples/output_hd.mp4'
