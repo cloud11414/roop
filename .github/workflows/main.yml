@@ -2,7 +2,7 @@ name: CI Workflow
 
 on:
   [push, pull_request]
- 
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -43,38 +43,31 @@ jobs:
           sudo apt-get install -y python3-tk  # Install Tkinter
           pip3 install yt-dlp
 
-      - name: Download YouTube video
+      - name: Download images
         run: |
-          wget -O ".github/examples/youtube.mp4" "https://px21.genyoutube.online/mates/en/download?url=ZTREjvNyOeQmlWkVdAKxW079cFkoJIiPAVxbhDWu1ur%2Bh%2BIfdpX%2B7JSJgFeqZRFC6ViPw1KJys1YbedHmHp8QyZIRZF5f7IHl4Tnno3dFNEpw1bezBYtXQOfyVNWqKalFeUGSVVe4ZPtFgQnO0UDJiJuefd7tBelwmvBnIuv/m1G6mpxehQTtZgRwcRxiZIy%2BufBHtuMsWgKDNQKZzLaAI/Z9b/BGLHwuHJpRpGdlWMRBJ4pLYWyHspuhu%2BNhhiM1AYUJ4kZ0pvC5XajlW2Y%2BJo8MX14%2BheLQRdFAB/5TsCtcEOBdOWS0oo6BRJFZf6fA5/JU1aopqX7/FxtM0ztBGWDvffNVfxjcYYHcPiZTGY5j4SsssJA0fuFya/wzMKFXcYzQ3syplWWm5wB7HEZ71LoKjgqA5Hgfcx/zdSjhMj7zNOrNT2Io85/R/MxCJKPQvmRZhXEHVlej3kDnH92xbhUKI7YZSjn0nIGA/17KmUvWVsSv1iC5T%2BRytj0zWU0DWExTB6nMY4b5VJ5vkbLuwLZtLam8oY1KjMhs%2B9UmaTSEeepaxDYDl3VAigl5xMGOxJwoC1AlJ8%3D"
+          mkdir -p .github/examples
+          wget -O ".github/examples/image1.jpg" "https://images.pexels.com/photos/206551/pexels-photo-206551.jpeg"
+          wget -O ".github/examples/image2.jpg" "https://images.pexels.com/photos/29069491/pexels-photo-29069491/free-photo-of-elegant-portrait-of-woman-in-sparkling-red-dress.jpeg"
+          wget -O ".github/examples/image3.jpg" "https://images.pexels.com/photos/1642228/pexels-photo-1642228.jpeg"
+
       - name: Set up FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@v2
 
       - name: Install Python dependencies
         run: pip install -r requirements-headless.txt
 
-      - name: Run Python script
+      - name: Perform face swaps
         run: |
-          python run.py -s ".github/examples/runningmaneh.png" -t ".github/examples/youtube.mp4" -o ".github/examples/output.mp4" --keep-frames --keep-fps --temp-frame-quality 1 --output-video-quality 1 --execution-provider cpu --execution-threads 1 --frame-processor face_swapper
+          for i in {1..3}; do
+            python run.py -s ".github/examples/image$i.jpg" -t target_image.jpg -o ".github/examples/output_image$i.jpg"  --execution-provider cpu --frame-processor face_swapper
+          done
 
-      # Optional: Uncomment the following to compare videos using PSNR
-      # - name: Compare videos using PSNR
-      #   run: ffmpeg -i .github/examples/snapshot.mp4 -i .github/examples/output.mp4 -filter_complex psnr -f null -
-
-      # Convert output to HD
-      - name: Convert output to HD
+      - name: Zip output images
         run: |
-          ffmpeg -i .github/examples/output.mp4 -vf scale=1280:720 -c:v libx264 -preset slow -crf 22 -c:a aac -b:a 128k .github/examples/output_hd.mp4
+          zip .github/examples/output_images.zip .github/examples/output_image1.jpg .github/examples/output_image2.jpg .github/examples/output_image3.jpg
 
-      # Upload processed original video as artifact
-      - name: Upload processed video as artifact
+      - name: Upload output images zip as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: processed-video
-          path: .github/examples/output.mp4
-
-      # Upload processed HD video as artifact
-      - name: Upload HD processed video as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: processed-video-hd
-          path: .github/examples/output_hd.mp4
+          name: output-images
+          path: .github/examples/output_images.zip
