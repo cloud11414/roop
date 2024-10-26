@@ -45,7 +45,6 @@ jobs:
 
       - name: Download images
         run: |
-          mkdir -p .github/examples
           wget -O ".github/examples/image1.jpg" "https://images.pexels.com/photos/206551/pexels-photo-206551.jpeg"
           wget -O ".github/examples/image2.jpg" "https://images.pexels.com/photos/29069491/pexels-photo-29069491/free-photo-of-elegant-portrait-of-woman-in-sparkling-red-dress.jpeg"
           wget -O ".github/examples/image3.jpg" "https://images.pexels.com/photos/1642228/pexels-photo-1642228.jpeg"
